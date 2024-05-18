@@ -1,2 +1,2 @@
 # liberty2txt
-common lisp liberty parser
+common lisp synopsys liberty parser
