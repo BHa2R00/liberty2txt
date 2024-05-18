@@ -1,0 +1,6 @@
+(load "../script/liberty.lisp")
+(setf *liberty-txt* "../lib/libsaed32/liberty/ccs/saed32hvt_tt0p85v25c.txt")
+(setf *liberty-timing* t)
+(setf *liberty-power* t)
+(liberty-compiler "../lib/libsaed32/liberty/ccs/saed32hvt_tt0p85v25c.lib")
+(format t "~A~%" (lines-match "(^|\\s+)(cell|pin|direction|clear|clocked_on|next_state|function|enable|data_in)(\\s+)(\\S+)"  (get-lib-cells "*" "*" "(\\s+)ff(\\s+)" "(\\s+)pin(\\s+)SE(\\s+)")))
