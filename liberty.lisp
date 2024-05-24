@@ -32,7 +32,7 @@
 	f file
 	(do ((k 1 (+ k 1))
 		 (line (read-line f nil 'end) (read-line f nil 'end)))
-	  ((equalp line 'end))
+	  ((equalp line 'end) (format fo "~%"))
 	  (if (pscan "\\S+" line)
 		(let ((line1 (preplace "\\s+" line "")))
 		  (cond
@@ -272,7 +272,7 @@
 	(with-fp-r s *liberty-txt*
 	  (do ((line-cnt 0 (+ line-cnt 1))
 		   (line (read-line s nil 'end) (read-line s nil 'end)))
-		((equalp line 'end))
+		((equalp line 'end) (format f "~%"))
 		(if (pscan "(^|\\s+)(cell_footprint|pin|function|clear|clocked_on|next_state)(\\s+)(\\S+)" line)
 		(let ((cell_footprint (pscan "cell_footprint(\\s+)(\\S+)" line))
 			  (pin (remove-duplicates (pmatch "pin(\\s+)(\\S+)" line) :test 'equalp))
