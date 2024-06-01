@@ -130,8 +130,8 @@ void txt2gds(char* txt, char* gds){
 				}
 				else if(strcmp(token, "RT_LIBNAME") == 0) {
 					fscanf(fp0, "%s", rstring);
-					u2 = (strlen(rstring)+4); wtu2(); u2 = 0x0206; wtu2();
-					for(k = 0; k < strlen(rstring); k++){ u1 = (uint8_t)rstring[k]; wtu1(); } 
+					u2 = (strlen(rstring)+4); if(strlen(rstring) % 2 == 1) u2++; wtu2(); u2 = 0x0206; wtu2();
+					for(k = 0; k < strlen(rstring); k++){ u1 = (uint8_t)rstring[k]; wtu1(); } if(k % 2 == 1) fputc(0x00, fp1);
 					printf(" write lib %s \n", rstring);
 				}
 				else if(strcmp(token, "RT_GENERATIONS") == 0) { u2 = (1*2+4); wtu2(); u2 = 0x2202; wtu2(); fscanf(fp0, "%d", &u2); wtu2(); }
@@ -146,8 +146,7 @@ void txt2gds(char* txt, char* gds){
 				else if(strcmp(token, "RT_STRNAME") == 0) {
 					fscanf(fp0, "%s", rstring);
 					u2 = (strlen(rstring)+4); if(strlen(rstring) % 2 == 1) u2++; wtu2(); u2 = 0x0606; wtu2();
-					for(k = 0; k < strlen(rstring); k++){ u1 = (uint8_t)rstring[k]; wtu1(); } 
-					if(k % 2 == 1) fputc(0x00, fp1);
+					for(k = 0; k < strlen(rstring); k++){ u1 = (uint8_t)rstring[k]; wtu1(); } if(k % 2 == 1) fputc(0x00, fp1);
 					printf(" write stream %s \n", rstring);
 				}
 				else if(strcmp(token, "RT_BOUNDARY") == 0) { u2 = 4; wtu2(); u2 = 0x0800; wtu2(); }
@@ -168,19 +167,17 @@ void txt2gds(char* txt, char* gds){
 				else if(strcmp(token, "RT_STRING") == 0) {
 					fscanf(fp0, "%s", rstring);
 					u2 = (strlen(rstring)+4); if(strlen(rstring) % 2 == 1) u2++; wtu2(); u2 = 0x1906; wtu2();
-					for(k = 0; k < strlen(rstring); k++){ u1 = (uint8_t)rstring[k]; wtu1(); } 
-					if(k % 2 == 1) fputc(0x00, fp1);
+					for(k = 0; k < strlen(rstring); k++){ u1 = (uint8_t)rstring[k]; wtu1(); } if(k % 2 == 1) fputc(0x00, fp1);
 				}
 				else if(strcmp(token, "RT_SNAME") == 0) {
 					fscanf(fp0, "%s", rstring);
 					u2 = (strlen(rstring)+4); if(strlen(rstring) % 2 == 1) u2++; wtu2(); u2 = 0x1206; wtu2();
-					for(k = 0; k < strlen(rstring); k++){ u1 = (uint8_t)rstring[k]; wtu1(); } 
-					if(k % 2 == 1) fputc(0x00, fp1);
+					for(k = 0; k < strlen(rstring); k++){ u1 = (uint8_t)rstring[k]; wtu1(); } if(k % 2 == 1) fputc(0x00, fp1);
 				}
 				else if(strcmp(token, "RT_PROPVALUE") == 0) {
 					fscanf(fp0, "%s", rstring);
-					u2 = (strlen(rstring)+4); wtu2(); u2 = 0x2c06; wtu2();
-					for(k = 0; k < strlen(rstring); k++){ u1 = (uint8_t)rstring[k]; wtu1(); } 
+					u2 = (strlen(rstring)+4); if(strlen(rstring) % 2 == 1) u2++; wtu2(); u2 = 0x2c06; wtu2();
+					for(k = 0; k < strlen(rstring); k++){ u1 = (uint8_t)rstring[k]; wtu1(); } if(k % 2 == 1) fputc(0x00, fp1);
 				}
 				else if(strcmp(token, "RT_XY") == 0) {
 					fscanf(fp0, "%02x", &length);
