@@ -36,17 +36,19 @@ FILE* fp0;
 FILE* fp1;
 
 uint8_t u0, u1, length;
-uint16_t u2;
+uint16_t u00, u2, length1;
 int16_t i2;
-uint32_t u4;
+uint32_t u0000, u4, length2;
 uint64_t u8;
 double f8;
 void rdu1(){ 
 	u0 = (uint8_t)(((u2>>8)&0xff)); 
+	u00 = (uint16_t)(((uint16_t)((u00<<8)&0xff00)) | ((uint16_t)(u0&0x00ff))); 
+	u0000 = (uint32_t)(((uint32_t)((u0000<<8)&0xffffff00)) | ((uint32_t)(u0&0x000000ff))); 
 	fread(&u1, sizeof(uint8_t), 1, fp0);
-	u2 = (uint16_t)(((u2<<8)&0xff00) | (u1&0x00ff)); 
-	u4 = (uint32_t)(((u4<<8)&0xffffff00) | (u1&0x000000ff)); 
-	u8 = (uint64_t)(((u8<<8)&0xffffffffffffff00) | (u1&0x00000000000000ff)); 
+	u2 = (uint16_t)(((uint16_t)((u2<<8)&0xff00)) | ((uint16_t)(u1&0x00ff))); 
+	u4 = (uint32_t)(((uint32_t)((u4<<8)&0xffffff00)) | ((uint32_t)(u1&0x000000ff))); 
+	u8 = (uint64_t)(((uint64_t)((u8<<8)&0xffffffffffffff00)) | ((uint64_t)(u1&0x00000000000000ff))); 
 }
 void rdu2(){ rdu1(); rdu1(); }
 void rdu4(){ rdu2(); rdu2(); }
@@ -65,20 +67,21 @@ void gds2txt(char* gds, char* txt){
 	fp0 = fopen(gds, "rb");
 	fp1 = fopen(txt, "w");
 	cst = 0;
+	int k;
 	if(fp0 != NULL){
 		printf("read gds file %s\n", gds);
 		printf("write txt file %s\n", txt);
 		while(!feof(fp0)){
 			rdu2();
 			if(cst == 0){
-				     if(0x0102 == u2){ fprintf(fp1, "RT_BGNLIB "); for(int k = 0; k < 12; k++){ rdu2(); fprintf(fp1, " %04x ", u2); } fputc('\n', fp1); cst = 1; }
-				else if(0x0206 == u2){ length = u0; fread(rstring, length-4, 1, fp0); rstring[length-4] = '\0'; fprintf(fp1, "RT_LIBNAME %s \n", rstring); cst = 1; printf(" read lib %s \n", rstring); }
+				     if(0x0102 == u2){ fprintf(fp1, "RT_BGNLIB "); for(k = 0; k < 12; k++){ rdu2(); fprintf(fp1, " %04x ", u2); } fputc('\n', fp1); cst = 1; }
+				else if(0x0206 == u2){ length = u0; fread(rstring, length-4, 1, fp0); rstring[length-4] = '\0'; fprintf(fp1, "RT_LIBNAME \"%s\" \n", rstring); cst = 1; printf(" read lib %s \n", rstring); }
 				else if(0x2202 == u2){ rdu2(); fprintf(fp1, "RT_GENERATIONS %d \n", u2); cst = 1; }
-				else if(0x0305 == u2){ fprintf(fp1, "RT_UNITS "); for(int k = 0; k < 4; k++){ rdu4(); fprintf(fp1, " %08x ", u4); } fputc('\n', fp1); cst = 1; }
+				else if(0x0305 == u2){ fprintf(fp1, "RT_UNITS "); for(k = 0; k < 4; k++){ rdu4(); fprintf(fp1, " %08x ", u4); } fputc('\n', fp1); cst = 1; }
 				else if(0x0400 == u2){ fprintf(fp1, "RT_ENDLIB\n"); cst = 1; }
-				else if(0x0502 == u2){ fprintf(fp1, "RT_BGNSTR "); for(int k = 0; k < 6; k++){ rdu4(); fprintf(fp1, " %08x ", u4); } fputc('\n', fp1); cst = 1; }
+				else if(0x0502 == u2){ fprintf(fp1, "RT_BGNSTR "); for(k = 0; k < 6; k++){ rdu4(); fprintf(fp1, " %08x ", u4); } fputc('\n', fp1); cst = 1; }
 				else if(0x0700 == u2){ fprintf(fp1, "RT_ENDSTR\n"); cst = 1; }
-				else if(0x0606 == u2){ length = u0; fread(rstring, length-4, 1, fp0); rstring[length-4] = '\0'; fprintf(fp1, " RT_STRNAME %s \n", rstring); cst = 1; printf(" read stream %s \n", rstring); }
+				else if(0x0606 == u2){ length = u0; fread(rstring, length-4, 1, fp0); rstring[length-4] = '\0'; fprintf(fp1, " RT_STRNAME \"%s\" \n", rstring); cst = 1; printf(" read stream %s \n", rstring); }
 				else if(0x0800 == u2){ fprintf(fp1, " RT_BOUNDARY "); cst = 1; }
 				else if(0x0900 == u2){ fprintf(fp1, " RT_PATH "); cst = 1; }
 				else if(0x0a00 == u2){ fprintf(fp1, " RT_SREF "); cst = 1; }
@@ -87,27 +90,43 @@ void gds2txt(char* gds, char* txt){
 				else if(0x0d02 == u2){ fprintf(fp1, " RT_LAYER "); rdu2(); fprintf(fp1, " %d ", u2); cst = 1; }
 				else if(0x0e02 == u2){ fprintf(fp1, " RT_DATATYPE "); rdu2(); fprintf(fp1, " %d ", u2); cst = 1; }
 				else if(0x0f03 == u2){ fprintf(fp1, " RT_WIDTH "); rdu4(); fprintf(fp1, " %d ", u4); cst = 1; }
-				else if(0x1003 == u2){ length = u0; fprintf(fp1, " RT_XY %02x ", length); for(int k = 0; k < ((length-4)/4); k++){ rdu4(); fprintf(fp1, "%d ", (int32_t)u4); } cst = 1; }
+				else if(0x1003 == u2){ length1 = (uint16_t)((u0000>>32)&0xffff); fprintf(fp1, " RT_XY %x ", length1); for(k = 0; k < ((length1-4)/4); k++){ rdu4(); fprintf(fp1, "%d ", (int32_t)u4); } cst = 1; }
 				else if(0x1100 == u2){ fprintf(fp1, " RT_ENDEL \n"); cst = 1; }
-				else if(0x1206 == u2){ length = u0; fread(rstring, length-4, 1, fp0); rstring[length-4] = '\0'; fprintf(fp1, " RT_SNAME %s ", rstring); cst = 1; }
+				else if(0x1206 == u2){ length = u0; fread(rstring, length-4, 1, fp0); rstring[length-4] = '\0'; fprintf(fp1, " RT_SNAME \"%s\" ", rstring); cst = 1; }
+				else if(0x1302 == u2){ fprintf(fp1, " RT_COLROW "); rdu4(); fprintf(fp1, " %d ", u4); cst = 1; }
 				else if(0x1602 == u2){ fprintf(fp1, " RT_TEXTTYPE "); rdu2(); fprintf(fp1, " %d ", u2); cst = 1; }
 				else if(0x1701 == u2){ fprintf(fp1, " RT_PRESENTATION "); rdu2(); fprintf(fp1, " %d ", u2); cst = 1; }
-				else if(0x1906 == u2){ length = u0; fread(rstring, length-4, 1, fp0); rstring[length-4] = '\0'; fprintf(fp1, " RT_STRING %s ", rstring); cst = 1; }
+				else if(0x1906 == u2){ length = u0; fread(rstring, length-4, 1, fp0); rstring[length-4] = '\0'; fprintf(fp1, " RT_STRING \"%s\" ", rstring); cst = 1; }
 				else if(0x1a01 == u2){ fprintf(fp1, " RT_STRANS "); rdu2(); fprintf(fp1, " %04x ", u2); cst = 1; }
 				else if(0x1b05 == u2){ fprintf(fp1, " RT_MAG "); rdu8(); fprintf(fp1, " %lf ", r642d(u8)); cst = 1; }
 				else if(0x1c05 == u2){ fprintf(fp1, " RT_ANGLE "); rdu8(); fprintf(fp1, " %lf ", r642d(u8)); cst = 1; }
 				else if(0x2102 == u2){ fprintf(fp1, " RT_PATHTYPE "); rdu2(); fprintf(fp1, " %d ", u2); cst = 1; }
 				else if(0x2b02 == u2){ fprintf(fp1, " RT_PROPATTR "); rdu2(); fprintf(fp1, " %d ", u2); cst = 1; }
-				else if(0x2c06 == u2){ length = u0; fread(rstring, length-4, 1, fp0); rstring[length-4] = '\0'; fprintf(fp1, " RT_PROPVALUE %s ", rstring); cst = 1; }
+				else if(0x2c06 == u2){ length = u0; fread(rstring, length-4, 1, fp0); rstring[length-4] = '\0'; fprintf(fp1, " RT_PROPVALUE \"%s\" ", rstring); cst = 1; }
 			}
 			else {
-				if((cst == 1) && (0x0000 == (u2 & 0xff00))){ cst = 0; }
+				if((cst == 1) && (0x0000 == (u2 & 0xf000))){ cst = 0; }
 			}
 		}
 	}
 	else printf("can not open gds file %s\n", gds);
 	fclose(fp0);
 	fclose(fp1);
+}
+
+void read_rstring(){
+	char c;
+	int k;
+	do c = fgetc(fp0); while(c != '"');
+	k = 0;
+	do {
+		c = fgetc(fp0); 
+		if(c != '"') {
+			rstring[k] = c;
+			k++;
+		}
+	} while(c != '"');
+	rstring[k] = '\0';
 }
 
 void txt2gds(char* txt, char* gds){
@@ -129,7 +148,7 @@ void txt2gds(char* txt, char* gds){
 					for(k = 0; k < 12; k++){ fscanf(fp0, "%04x", &u2); wtu2(); } 
 				}
 				else if(strcmp(token, "RT_LIBNAME") == 0) {
-					fscanf(fp0, "%s", rstring);
+					read_rstring();//fscanf(fp0, "%*[\"]%99[^\"]", rstring);
 					u2 = (strlen(rstring)+4); if(strlen(rstring) % 2 == 1) u2++; wtu2(); u2 = 0x0206; wtu2();
 					for(k = 0; k < strlen(rstring); k++){ u1 = (uint8_t)rstring[k]; wtu1(); } if(k % 2 == 1) fputc(0x00, fp1);
 					printf(" write lib %s \n", rstring);
@@ -144,7 +163,7 @@ void txt2gds(char* txt, char* gds){
 					for(k = 0; k < 6; k++){ fscanf(fp0, "%08x", &u4); wtu4(); } 
 				}
 				else if(strcmp(token, "RT_STRNAME") == 0) {
-					fscanf(fp0, "%s", rstring);
+					read_rstring();//fscanf(fp0, "%*[\"]%99[^\"]", rstring);
 					u2 = (strlen(rstring)+4); if(strlen(rstring) % 2 == 1) u2++; wtu2(); u2 = 0x0606; wtu2();
 					for(k = 0; k < strlen(rstring); k++){ u1 = (uint8_t)rstring[k]; wtu1(); } if(k % 2 == 1) fputc(0x00, fp1);
 					printf(" write stream %s \n", rstring);
@@ -156,6 +175,7 @@ void txt2gds(char* txt, char* gds){
 				else if(strcmp(token, "RT_AREF") == 0) { u2 = 4; wtu2(); u2 = 0x0b00; wtu2(); }
 				else if(strcmp(token, "RT_LAYER") == 0) { u2 = (1*2+4); wtu2(); u2 = 0x0d02; wtu2(); fscanf(fp0, "%d", &u2); wtu2(); }
 				else if(strcmp(token, "RT_DATATYPE") == 0) { u2 = (1*2+4); wtu2(); u2 = 0x0e02; wtu2(); fscanf(fp0, "%d", &u2); wtu2(); }
+				else if(strcmp(token, "RT_COLROW") == 0) { u2 = (2*2+4); wtu2(); u2 = 0x1302; wtu2(); fscanf(fp0, "%d", &u4); wtu4(); }
 				else if(strcmp(token, "RT_TEXTTYPE") == 0) { u2 = (1*2+4); wtu2(); u2 = 0x1602; wtu2(); fscanf(fp0, "%d", &u2); wtu2(); }
 				else if(strcmp(token, "RT_PATHTYPE") == 0) { u2 = (1*2+4); wtu2(); u2 = 0x2102; wtu2(); fscanf(fp0, "%d", &u2); wtu2(); }
 				else if(strcmp(token, "RT_PRESENTATION") == 0) { u2 = (1*2+4); wtu2(); u2 = 0x1701; wtu2(); fscanf(fp0, "%d", &u2); wtu2(); }
@@ -165,24 +185,24 @@ void txt2gds(char* txt, char* gds){
 				else if(strcmp(token, "RT_MAG") == 0) { u2 = (1*8+4); wtu2(); u2 = 0x1b05; wtu2(); fscanf(fp0, "%lf", &f8); u8 = d2r64(f8); wtu8(); }
 				else if(strcmp(token, "RT_ANGLE") == 0) { u2 = (1*8+4); wtu2(); u2 = 0x1c05; wtu2(); fscanf(fp0, "%lf", &f8); u8 = d2r64(f8); wtu8(); }
 				else if(strcmp(token, "RT_STRING") == 0) {
-					fscanf(fp0, "%s", rstring);
+					read_rstring();//fscanf(fp0, "%*[\"]%99[^\"]", rstring);
 					u2 = (strlen(rstring)+4); if(strlen(rstring) % 2 == 1) u2++; wtu2(); u2 = 0x1906; wtu2();
 					for(k = 0; k < strlen(rstring); k++){ u1 = (uint8_t)rstring[k]; wtu1(); } if(k % 2 == 1) fputc(0x00, fp1);
 				}
 				else if(strcmp(token, "RT_SNAME") == 0) {
-					fscanf(fp0, "%s", rstring);
+					read_rstring();//fscanf(fp0, "%*[\"]%99[^\"]", rstring);
 					u2 = (strlen(rstring)+4); if(strlen(rstring) % 2 == 1) u2++; wtu2(); u2 = 0x1206; wtu2();
 					for(k = 0; k < strlen(rstring); k++){ u1 = (uint8_t)rstring[k]; wtu1(); } if(k % 2 == 1) fputc(0x00, fp1);
 				}
 				else if(strcmp(token, "RT_PROPVALUE") == 0) {
-					fscanf(fp0, "%s", rstring);
+					read_rstring();//fscanf(fp0, "%*[\"]%99[^\"]", rstring);
 					u2 = (strlen(rstring)+4); if(strlen(rstring) % 2 == 1) u2++; wtu2(); u2 = 0x2c06; wtu2();
 					for(k = 0; k < strlen(rstring); k++){ u1 = (uint8_t)rstring[k]; wtu1(); } if(k % 2 == 1) fputc(0x00, fp1);
 				}
 				else if(strcmp(token, "RT_XY") == 0) {
-					fscanf(fp0, "%02x", &length);
-					u2 = (uint8_t)length; wtu2(); u2 = 0x1003; wtu2();
-					for(k = 0; k < ((length-4)/4); k++){ fscanf(fp0, "%d", &u4); wtu4(); } 
+					fscanf(fp0, "%x", &length1);
+					u2 = (uint16_t)length1; wtu2(); u2 = 0x1003; wtu2();
+					for(k = 0; k < ((length1-4)/4); k++){ fscanf(fp0, "%d", &u4); wtu4(); } 
 				}
 				else if(strcmp(token, "RT_ENDEL") == 0) { u2 = 4; wtu2(); u2 = 0x1100; wtu2(); }
 				else if(strcmp(token, "RT_ENDSTR") == 0) { u2 = 4; wtu2(); u2 = 0x0700; wtu2(); }
